@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from functools import wraps
 
-from src.plugins.nonebot_plugin_dbimg.models import GroupConfig, GroupId
+from ...models import GroupConfig, GroupId
 
 def ensure_group_exists(func):
     """装饰器：确保 group_id 存在"""

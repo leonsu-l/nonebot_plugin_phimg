@@ -7,4 +7,4 @@ __plugin_meta__ = PluginMetadata(
     type = "application"
 )
 
-from .plugins import request
+from .plugins import cmd_handler

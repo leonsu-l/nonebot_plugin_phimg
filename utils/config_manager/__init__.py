@@ -3,7 +3,7 @@ from pathlib import Path
 from .global_manager import GlobalConfigManager
 from .group_manager import GroupConfigManager
 
-CONFIG_PATH = Path(__file__).parent.parent.parent / "config"
+CONFIG_PATH = (Path(__file__).parent.parent.parent / "config").resolve()
 
 __global_config_json = str(CONFIG_PATH / "global_config.json")
 global_cfg = GlobalConfigManager(__global_config_json)

@@ -1,1 +1,1 @@
-from .request import _ as request
+from .handler import cmd_handler

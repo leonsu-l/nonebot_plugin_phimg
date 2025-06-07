@@ -2,7 +2,7 @@ import aiohttp
 from urllib.parse import urlencode
 from typing import Union
 
-from . import DerpibooruAPIError, NoImagesFoundError
+from ....errors import DerpibooruAPIError, NoImagesFoundError
 
 async def _(
     q: list[str],

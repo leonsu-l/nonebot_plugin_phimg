@@ -1,16 +1,2 @@
-from typing import Optional
-
-class DerpibooruAPIError(Exception):
-    """Derpibooru API 基础异常类"""
-    def __init__(self, message: str, status_code: Optional[int] = None):
-        self.message = message
-        self.status_code = status_code
-        super().__init__(self.message)
-
-class NoImagesFoundError(DerpibooruAPIError):
-    """没有找到图片的异常"""
-    def __init__(self, message: str = "未找到匹配的图片"):
-        super().__init__(message)
-
 from .tags_search_img import _ as tags_search_img
 from .img_search_img import _ as img_search_img

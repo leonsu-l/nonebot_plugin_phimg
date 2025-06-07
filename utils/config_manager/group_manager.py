@@ -23,7 +23,10 @@ class GroupConfigManager:
         if Path(self.file_path).exists():
             with open(self.file_path, "r", encoding="utf-8") as f:
                 loaded_data = json.load(f)
-            return GroupId.parse_obj(loaded_data)
+            if "__root__" in loaded_data:
+                return GroupId(__root__=loaded_data["__root__"])
+            else:
+                return GroupId(__root__=loaded_data)
         else:
             return GroupId(__root__={})
 

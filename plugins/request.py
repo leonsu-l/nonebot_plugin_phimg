@@ -13,13 +13,12 @@ from nonebot.log import logger
 from nonebot.permission import SUPERUSER
 
 from .search import tags_search_img
-from ..utils import group_only, group_cfg, global_cfg
+from ..utils import group_only
 
 driver = get_driver()
 driver.config.command_start = {".", "。"}
 
 request = on_command("搜图")
-request.handle()
 
 @request.handle()
 async def _(

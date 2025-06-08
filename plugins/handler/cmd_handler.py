@@ -47,7 +47,7 @@ async def _(
     tags_str = ''.join(argv[:index])
 
     # 输入为纯参数或者tags加参数
-    if not index and index < len(argv):
+    if not index or index and index < len(argv):
         try:
             old_stdout = sys.stdout
             sys.stdout = captured_output = StringIO()

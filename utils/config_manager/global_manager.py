@@ -21,3 +21,23 @@ class GlobalConfigManager:
         """将当前的配置保存到 JSON 文件"""
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(self.data.dict(), f, ensure_ascii=False, indent=2)
+
+    def get_tags(self) -> list[str]:
+        """获取全局 tags"""
+        tags = self.data.tags
+        return tags if tags else []
+    
+    def get_status(self) -> bool:
+        """获取全局状态"""
+        enabled = self.data.enabled
+        return enabled if enabled else True
+
+    def update_tags(self, new_tags: list[str]):
+        pass
+    
+    def add_tags(self, tags: list[str]):
+        pass
+
+    def rm_tags(self, tags: list[str]):
+        """从全局配置中删除指定的 tags"""
+        pass

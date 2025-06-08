@@ -9,7 +9,7 @@ def ensure_group_exists(func):
     @wraps(func)
     def wrapper(self, group_id: str, *args, **kwargs):
         if group_id not in self.data.__root__:
-            self.data.__root__[group_id] = GroupConfig(enabled=True, tags=["safe"])
+            self.data.__root__[group_id] = GroupConfig()
         return func(self, group_id, *args, **kwargs)
     return wrapper
 
@@ -28,7 +28,7 @@ class GroupConfigManager:
             else:
                 return GroupId(__root__=loaded_data)
         else:
-            return GroupId(__root__={})
+            return GroupId()
 
     def save(self):
         """将当前的配置保存到 JSON 文件"""

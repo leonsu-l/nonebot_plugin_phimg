@@ -1,6 +1,7 @@
 from typing import Union
 
 from nonebot.log import logger
+from nonebot.exception import FinishedException
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     PrivateMessageEvent,
@@ -9,32 +10,44 @@ from nonebot.adapters.onebot.v11 import (
 )
 
 from . import tags_search_img
-# from ..handler import handle_exceptions
+from ...utils import group_cfg, global_cfg
+from ...errors import NoImagesFoundError, DerpibooruAPIError
 
-# @handle_exceptions
 async def _(
     cmd,
     event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent],
     tags_str: str
 ):
     """处理搜图命令"""
-    tags_list = parse_tags(tags_str)
+    user_tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
+    group_tags = group_cfg.get_tags(str(event.group_id)) if isinstance(event, GroupMessageEvent) else []
+    global_tags = global_cfg.get_tags()
 
-    img_info = await tags_search_img(tags_list)
-    # img_info = await get_img_info(arg_str, at_user)
-    logger.success(f"图片信息: {img_info}")
+    all_tags = group_tags + global_tags + user_tags
+    tags_list = list(set(all_tags)) # 去重
 
-    img_url = img_info["url"]
-    img_score = img_info["score"]
-    # image = MessageSegment.image(img_url) if img_url else None
-    img_id = img_url.split('/')[-2] if img_url else None
+    logger.info(f"搜索所用tags: {tags_list}")
 
-    at_user = MessageSegment.at(event.user_id)
-    await cmd.send(at_user + '''image''' + f"id: {img_id}\nscore: {img_score}")
-    await cmd.finish()
+    try:
+        img_info = await tags_search_img(tags_list)
+        logger.success(f"图片信息: {img_info}")
 
-def parse_tags(tags_str: str) -> list:
-    """将传入的tags字符串转换为列表"""
-    tags_list = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
-    logger.info(f"搜索标签为：{tags_list}")
-    return tags_list
+        img_url = img_info["url"]
+        img_score = img_info["score"]
+        # image = MessageSegment.image(img_url) if img_url else None
+        img_id = img_url.split('/')[-2] if img_url else None
+
+        at_user = MessageSegment.at(event.user_id)
+        await cmd.send(at_user + '''image''' + f"id: {img_id}\nscore: {img_score}")
+        await cmd.finish()
+    except NoImagesFoundError as e:
+        logger.error(f"无图片: {str(e)}")
+        await cmd.finish(f"无图片: {str(e)}")
+    except DerpibooruAPIError as e:
+        logger.error(f"Derpibooru API 错误: {str(e)}")
+        await cmd.finish(f"Derpibooru API 错误: {str(e)}")
+    except FinishedException as e:
+        raise
+    except Exception as e:
+        logger.error(f"Search执行异常: {str(e)}")
+        raise

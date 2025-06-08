@@ -1,10 +1,22 @@
 import argparse
 
-parser = argparse.ArgumentParser(prog="搜图", add_help=False)
+parser = argparse.ArgumentParser(
+    prog=".搜图",
+    add_help=False,
+    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n",
+)
+parser.add_argument(
+    'tagss',
+    nargs='?',
+    action='store',
+    type=str,
+    metavar="<tags>",
+    help='直接输入标签即可搜图（多个标签用逗号分隔）\n'
+)
 parser.add_argument(
     '--help',
     action='help', 
-    help='显示帮助信息'
+    help='显示帮助信息（已实现）'
 )
 parser.add_argument(
     "--add",
@@ -23,7 +35,7 @@ parser.add_argument(
 parser.add_argument(
     "--tags",
     action="store_true",
-    help="获取当前群聊内置标签列表"
+    help="获取当前群聊内置标签列表（已实现）"
 )
 parser.add_argument(
     "--on",

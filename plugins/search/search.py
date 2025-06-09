@@ -42,10 +42,10 @@ async def _(
         await cmd.finish()
     except NoImagesFoundError as e:
         logger.error(f"无图片: {str(e)}")
-        await cmd.finish(f"无图片: {str(e)}")
+        await cmd.finish( str(e))
     except DerpibooruAPIError as e:
         logger.error(f"Derpibooru API 错误: {str(e)}")
-        await cmd.finish(f"Derpibooru API 错误: {str(e)}")
+        await cmd.finish( str(e) )
     except FinishedException as e:
         raise
     except Exception as e:

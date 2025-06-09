@@ -1,9 +1,11 @@
 import argparse
+from .argument_parser import CustomArgumentParser
 
-parser = argparse.ArgumentParser(
+parser = CustomArgumentParser(
     prog=".搜图",
     add_help=False,
-    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n",
+    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀",
+    formatter_class=argparse.RawDescriptionHelpFormatter
 )
 parser.add_argument(
     'tagss',
@@ -16,7 +18,7 @@ parser.add_argument(
 parser.add_argument(
     '--help',
     action='help', 
-    help='显示帮助信息（已实现）'
+    help='显示帮助信息'
 )
 parser.add_argument(
     "--add",
@@ -35,7 +37,7 @@ parser.add_argument(
 parser.add_argument(
     "--tags",
     action="store_true",
-    help="获取当前群聊内置标签列表（已实现）"
+    help="获取当前群聊内置标签列表"
 )
 parser.add_argument(
     "--on",

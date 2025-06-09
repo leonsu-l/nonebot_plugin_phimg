@@ -29,10 +29,7 @@ async def _(
     arg: Message = CommandArg()
 ):
     if not isinstance(event, GroupMessageEvent):
-        await cmd.finish("该命令仅限群聊使用，请在群聊中使用。")
-
-    if not group_cfg.get_status(str(event.group_id)):
-        await cmd.finish("功能未在本群开启，管理员请用 。搜图 --on 启动")
+        await cmd.finish("搜图仅限群聊使用。")
 
     text = arg.extract_plain_text().strip()
     argv = shlex.split(text)
@@ -47,37 +44,44 @@ async def _(
     tags_str = ''.join(argv[:index])
 
     # 输入为纯参数或者tags加参数
-    if not index or index and index < len(argv):
-        try:
-            old_stdout = sys.stdout
-            sys.stdout = captured_output = StringIO()
+    try:
+        opts = cmd_parser.parse_args(argv[index:])
+    except SystemExit:
+        # 获取帮助信息或错误信息
+        output_message = cmd_parser.get_output()
+        await cmd.finish(output_message)
+    except Exception as e:
+        await cmd.finish(f"参数解析出错：{e}")
+
+    if opts.tags and not tags_str:
+        group_tags = group_cfg.get_tags(str(event.group_id))
+        group_tags = group_tags if group_tags else ["无"]
+        await cmd.finish(f"当前群聊内置标签：{', '.join(group_tags)}")
         
-            opts = cmd_parser.parse_args(argv[index:])
-            sys.stdout = old_stdout
-        except SystemExit:
-            sys.stdout = old_stdout
-            help_message = captured_output.getvalue()
-            await cmd.finish(help_message)
-        except Exception as e:
-            sys.stdout = old_stdout
-            await cmd.finish(f"参数解析出错：{e}")
+    if opts.on and opts.off:
+        await cmd.finish("不能同时开启和关闭搜图功能，请选择一个操作")
+    if opts.on:
+        group_cfg.enable(str(event.group_id))
+        await cmd.send("搜图功能已在本群开启")
+    elif opts.off:
+        group_cfg.disable(str(event.group_id))
+        await cmd.send("搜图功能已在本群关闭")
 
-        if opts.tags and not tags_str:
-            group_tags = group_cfg.get_tags(str(event.group_id))
-            group_tags = group_tags if group_tags else "当前群聊没有内置标签"
-            await cmd.finish(f"当前群聊内置标签：{', '.join(group_tags)}")
-            
-        if opts.on and opts.off:
-            pass
-        elif opts.on:
-            pass
-        elif opts.off:
-            pass
+    if opts.add:
+        group_cfg.add_tags(str(event.group_id), parse_tags(opts.add))
+        await cmd.send(f"添加成功，本群标签现为: {group_cfg.get_tags(str(event.group_id))}")
+    if opts.rm:
+        group_cfg.remove_tags(str(event.group_id), parse_tags(opts.rm))
+        await cmd.send(f"删除成功，本群标签现为: {group_cfg.get_tags(str(event.group_id))}")
 
-        if opts.add:
-            pass
-        if opts.rm:
-            pass
+    if not group_cfg.get_status(str(event.group_id)):
+        await cmd.finish("功能未在本群开启，管理员请用 。搜图 --on 启动")
 
     if tags_str:
         await search(cmd, event=event, tags_str=tags_str)
+
+def parse_tags(tags_str: str) -> list[str]:
+    """解析标签字符串为标签列表"""
+    if not tags_str:
+        return []
+    return [tag.strip() for tag in tags_str.split(",") if tag.strip()]

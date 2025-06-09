@@ -5,7 +5,7 @@ from functools import wraps
 from ...models import GroupConfig, GroupId
 
 def ensure_group_exists(func):
-    """装饰器：确保 group_id 存在"""
+    """装饰器：确保 group_id 及其配置存在"""
     @wraps(func)
     def wrapper(self, group_id: str, *args, **kwargs):
         if group_id not in self.data.__root__:
@@ -56,11 +56,11 @@ class GroupConfigManager:
         self.save()
 
     @ensure_group_exists
-    def add_tags(self, group_id: str, tags: list[str]):
+    def add_tags(self, group_id: str, added_tags: list[str]):
         """向指定 group_id 的 tags 中添加一列 tags"""
-        for tag in tags:
-            if tag not in self.data.__root__[group_id].tags:
-                self.data.__root__[group_id].tags.append(tag)
+        current_tags = self.get_tags(group_id)
+        all_tags = current_tags + list(added_tags)
+        self.data.__root__[group_id].tags = list(set(all_tags))
         self.save()
 
     @ensure_group_exists

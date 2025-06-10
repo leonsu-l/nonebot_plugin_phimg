@@ -1,7 +1,5 @@
 from typing import Union
 import shlex
-import sys
-from io import StringIO
 
 from nonebot import get_driver, on_command
 from nonebot.params import CommandArg
@@ -43,6 +41,12 @@ async def _(
         index = len(argv)
     tags_str = ''.join(argv[:index])
 
+    # 如果没有输入任何内容，直接返回帮助信息
+    if not text:
+        cmd_parser.print_help()
+        output_message = cmd_parser.get_output()
+        await cmd.finish(output_message)
+
     # 输入为纯参数或者tags加参数
     try:
         opts = cmd_parser.parse_args(argv[index:])
@@ -52,20 +56,19 @@ async def _(
         await cmd.finish(output_message)
     except Exception as e:
         await cmd.finish(f"参数解析出错：{e}")
+     
+    if event.user_id == SUPERUSER or event.sender.role in ["owner", "admin"]:
+        if opts.on and opts.off:
+            await cmd.finish("不能同时开启和关闭搜图功能，请选择一个操作")
+        if opts.on:
+            group_cfg.enable(str(event.group_id))
+            await cmd.send("搜图功能已在本群开启")
+        elif opts.off:
+            group_cfg.disable(str(event.group_id))
+            await cmd.send("搜图功能已在本群关闭")
 
-    if opts.tags and not tags_str:
-        group_tags = group_cfg.get_tags(str(event.group_id))
-        group_tags = group_tags if group_tags else ["无"]
-        await cmd.finish(f"当前群聊内置标签：{', '.join(group_tags)}")
-        
-    if opts.on and opts.off:
-        await cmd.finish("不能同时开启和关闭搜图功能，请选择一个操作")
-    if opts.on:
-        group_cfg.enable(str(event.group_id))
-        await cmd.send("搜图功能已在本群开启")
-    elif opts.off:
-        group_cfg.disable(str(event.group_id))
-        await cmd.send("搜图功能已在本群关闭")
+    if not group_cfg.get_status(str(event.group_id)):
+        await cmd.finish("功能未在本群开启，管理员请用 .搜图 --on 启动")
 
     if opts.add:
         group_cfg.add_tags(str(event.group_id), parse_tags(opts.add))
@@ -74,9 +77,15 @@ async def _(
         group_cfg.remove_tags(str(event.group_id), parse_tags(opts.rm))
         await cmd.send(f"删除成功，本群标签现为: {group_cfg.get_tags(str(event.group_id))}")
 
-    if not group_cfg.get_status(str(event.group_id)):
-        await cmd.finish("功能未在本群开启，管理员请用 。搜图 --on 启动")
+    if opts.tags:
+        group_tags = group_cfg.get_tags(str(event.group_id))
+        group_tags = group_tags if group_tags else ["无"]
+        await cmd.send(f"当前群聊内置标签：{', '.join(group_tags)}")
 
+    query = {
+        tags_str
+    }
+   
     if tags_str:
         await search(cmd, event=event, tags_str=tags_str)
 

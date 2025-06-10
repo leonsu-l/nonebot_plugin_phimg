@@ -4,6 +4,11 @@ from typing import Union
 
 from ....errors import DerpibooruAPIError, NoImagesFoundError
 
+headers = {
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+}
+
 async def _(
     q: list[str],
     per_page: int,
@@ -33,7 +38,7 @@ async def _(
         DerpibooruAPIError: API 请求失败
     """
     if not q:
-        raise ValueError("搜索标签不能为空")
+        raise ValueError("api内部错误: 搜索标签不能为空")
     
     # 构建查询参数
     query_params = {
@@ -53,49 +58,19 @@ async def _(
     
     try:
         timeout_config = aiohttp.ClientTimeout(total=timeout)
-        async with aiohttp.ClientSession(timeout=timeout_config) as session:
+        async with aiohttp.ClientSession(timeout=timeout_config, headers=headers) as session:
             async with session.get(api_url) as response:
                 response.raise_for_status()  # 检查 HTTP 状态码
                 data = await response.json()
-                
-                if data.get('total', 0) == 0:
-                    raise NoImagesFoundError("未找到匹配的图片")
+
+                if data.get('total') == 0:
+                    raise NoImagesFoundError()
                     
                 return data.get('images', [])
                 
     except aiohttp.ClientError as e:
         raise DerpibooruAPIError(f"API 请求失败: {e}")
+    except NoImagesFoundError:
+        raise
     except Exception as e:
         raise DerpibooruAPIError(f"处理响应时出错: {e}")
-
-'''
-async def tags_search_img(
-        q: list,
-        per_page: int,
-        key: str = "",
-        page: int = 1,
-        sf: str = "score",
-        sd: str = "desc") -> list:
-    """
-    提交搜图请求（tags）
-    :param q: tags （必须）
-    :param per_page: 一页的图片数，即一次请求获取的图片数
-    :param key: Derpibooru的key
-    :param page: 页数
-    :param sf: 排序依据
-    :param sd: 排序顺序
-    :return:
-    """
-    query = {"key": key, "page": page, "per_page": per_page, "q": ",".join(q), "sf": sf, "sd": sd}
-    query_str = urlencode(query, doseq=False, encoding='utf-8', safe='')
-    api_url = f"https://derpibooru.org/api/v1/json/search/images?{query_str}"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(api_url) as resp:
-            data = await resp.json()
-            if data['total'] == 0:
-                raise FileNotFoundError
-            return data['images']
-
-async def img_search_img(query):
-    pass
-'''

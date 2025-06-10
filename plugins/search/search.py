@@ -34,15 +34,15 @@ async def _(
 
         img_url = img_info["url"]
         img_score = img_info["score"]
-        # image = MessageSegment.image(img_url) if img_url else None
+        image = MessageSegment.image(img_url)
         img_id = img_url.split('/')[-2] if img_url else None
 
         at_user = MessageSegment.at(event.user_id)
-        await cmd.send(at_user + '''image''' + f"id: {img_id}\nscore: {img_score}")
+        await cmd.send(at_user + image + f"id: {img_id}\nscore: {img_score}\ntags: {', '.join(tags_list)}")
         await cmd.finish()
     except NoImagesFoundError as e:
         logger.error(f"无图片: {str(e)}")
-        await cmd.finish( str(e))
+        await cmd.finish( str(e) )
     except DerpibooruAPIError as e:
         logger.error(f"Derpibooru API 错误: {str(e)}")
         await cmd.finish( str(e) )

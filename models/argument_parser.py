@@ -34,10 +34,15 @@ class CustomArgumentParser(argparse.ArgumentParser):
 
     def _customize_error_message(self, message):
         """自定义错误消息"""
-        appended_message = message.split(':')[1].strip() if ':' in message else ''
+        error_parts = message.split(':', 1)
+        appended_message = error_parts[1].strip() if len(error_parts) > 1 else ''
+        
         for key, custom_msg in self.custom_error_messages.items():
             if key in message.lower():
                 return f"{custom_msg}: {appended_message}"
+        
+        # 如果没有匹配的自定义错误消息，返回原始消息
+        return message
             
     def _customize_help_text(self, help_text):
         """自定义帮助文本"""
@@ -52,21 +57,20 @@ class CustomArgumentParser(argparse.ArgumentParser):
         custom_message = self._customize_error_message(message)
         self.output_buffer = StringIO()
         self.output_buffer.write(f"错误: {custom_message}")
-        raise SystemExit(1)  # 保持原有的SystemExit行为
+        raise SystemExit()
     
     def print_help(self, file=None):
         """重写print_help方法，将帮助信息写入缓冲区"""
-        if (not self.has_error):
-            help_text = self.format_help()
-            custom_help_text = self._customize_help_text(help_text)
-            self.clear_output()
-            self.output_buffer.write(custom_help_text)
+        help_text = self.format_help()
+        custom_help_text = self._customize_help_text(help_text)
+        self.clear_output()
+        self.output_buffer.write(custom_help_text)
     
-    def get_output(self):
+    def get_output(self) -> str:
         """获取输出内容"""
         return self.output_buffer.getvalue()
     
-    def clear_output(self):
+    def clear_output(self) -> None:
         """清空输出缓冲区"""
         self.output_buffer = StringIO()
         self.has_error = False

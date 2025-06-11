@@ -4,11 +4,11 @@ from .apis import tags_search_img
 
 async def _(
     tags_list: list[str], 
-    per_page: int = 50, 
+    key: str,
     **kwargs
 ) -> dict:
     """根据tags搜图"""
-    imgs_list = await tags_search_img(tags_list, per_page, **kwargs)
+    imgs_list = await tags_search_img(tags_list, key=key, **kwargs)
     return select_random_img(imgs_list)
 
 def select_random_img(imgs_list: list[dict]) -> dict:

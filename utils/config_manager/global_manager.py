@@ -2,7 +2,7 @@ import json
 import aiofiles
 from pathlib import Path
 
-from src.plugins.nonebot_plugin_dbimg.models import GlobalConfig
+from ...models import GlobalConfig
 
 class GlobalConfigManager:
     def __init__(self, file_path: str):
@@ -38,6 +38,11 @@ class GlobalConfigManager:
         """获取全局状态"""
         enabled = self.data.enabled
         return enabled if enabled else True
+    
+    def get_key(self) -> str:
+        """获取全局 API Key"""
+        key = self.data.key
+        return key if key else ""
 
     def update_tags(self, new_tags: list[str]):
         """更新全局配置中的 tags"""

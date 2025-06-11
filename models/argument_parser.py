@@ -1,13 +1,11 @@
 import argparse
 from io import StringIO
 
-import argparse
-from io import StringIO
-
 class CustomArgumentParser(argparse.ArgumentParser):
     """自定义ArgumentParser，将错误和帮助信息写入字符串而不是stderr/stdout"""
     
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault('prefix_chars', '--')
         super().__init__(*args, **kwargs)
         self.output_buffer = StringIO()
         self.has_error = False
@@ -24,6 +22,15 @@ class CustomArgumentParser(argparse.ArgumentParser):
             'positional arguments': '主要参数',
             'options': '附加参数',
         }
+        
+    def _parse_optional(self, arg_string):
+        """重写可选参数解析，只处理双横线参数"""
+        # 只有以双横线开头的才被视为选项参数
+        if arg_string.startswith('--'):
+            return super()._parse_optional(arg_string)
+        else:
+            # 单横线开头的视为位置参数
+            return None
 
     def _customize_error_message(self, message):
         """自定义错误消息"""
@@ -52,6 +59,7 @@ class CustomArgumentParser(argparse.ArgumentParser):
         if (not self.has_error):
             help_text = self.format_help()
             custom_help_text = self._customize_help_text(help_text)
+            self.clear_output()
             self.output_buffer.write(custom_help_text)
     
     def get_output(self):

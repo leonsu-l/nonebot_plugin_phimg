@@ -23,6 +23,7 @@ parser.add_argument(
 parser.add_argument(
     "--add",
     action="store",
+    nargs='*',
     type=str,
     metavar="<tags>",
     help="添加标签，多个标签用逗号分隔"
@@ -30,6 +31,7 @@ parser.add_argument(
 parser.add_argument(
     "--rm",
     action="store",
+    nargs='*',
     type=str,
     metavar="<tags>",
     help="删除标签，多个标签用逗号分隔"

@@ -16,6 +16,22 @@ from ...models import cmd_parser
 from ...utils import group_cfg, init
 from ..search import search
 
+translation_table = str.maketrans({
+    '；': ';',           # 将 ； 替换为 ;
+    '：': ':',           # 将 ： 替换为 :
+    '，': ',',          # 将 ，替换为 ,
+    '（': '(',          # 将 （ 替换为 (
+    '）': ')',          # 将 ） 替换为 )
+    '【': '[',          # 将 【 替换为 [
+    '】': ']',          # 将 】 替换为 ]
+    '《': '<',          # 将 《 替换为 <
+    '》': '>',          # 将 》 替换为 >
+    '？': '?',          # 将 中文问号 替换为 英文问号
+    '！': '!',          # 将 中文感叹号 替换为 英文感叹号
+    '。': '.',          # 将 中文句号 替换为 英文句号
+    '、': ',',          # 将 中文顿号 替换为 英文逗号
+})
+
 driver = get_driver()
 driver.config.command_start = {".", "。"}
 
@@ -29,9 +45,20 @@ async def _(
     if not isinstance(event, GroupMessageEvent):
         await cmd.finish("搜图仅限群聊使用。")
 
-    text = arg.extract_plain_text().strip()
+    text_raw = arg.extract_plain_text().strip()
+    text = text_raw.translate(translation_table)
     argv = shlex.split(text)
     
+    # 如果没有输入任何内容，直接返回帮助信息
+    if not text:
+        cmd_parser.print_help()
+        output_message = cmd_parser.get_output()
+        await cmd.finish(output_message)
+
+    logger.info(text)
+    logger.info(argv)
+
+    # 初处理
     index = -1
     for _ in argv:
         if _.startswith("--"):
@@ -41,15 +68,12 @@ async def _(
         index = len(argv)
     tags_str = ''.join(argv[:index])
 
-    # 如果没有输入任何内容，直接返回帮助信息
-    if not text:
-        cmd_parser.print_help()
-        output_message = cmd_parser.get_output()
-        await cmd.finish(output_message)
-
+    logger.info(argv[index:])
+    
     # 输入为纯参数或者tags加参数
     try:
         opts = cmd_parser.parse_args(argv[index:])
+        logger.info(opts)
     except SystemExit:
         # 获取帮助信息或错误信息
         output_message = cmd_parser.get_output()
@@ -104,10 +128,11 @@ async def _(
     if tags_str:
         await search(cmd, event=event, tags_str=tags_str)
 
-def parse_tags(tags_str: str) -> list[str]:
+def parse_tags(tags_raw: str) -> list[str]:
     """解析标签字符串为标签列表"""
-    if not tags_str:
+    if not tags_raw:
         return []
+    tags_str = ''.join(tags_raw).strip()
     return [tag.strip() for tag in tags_str.split(",") if tag.strip()]
 
 def get_current_tags(group_id: str) -> str:

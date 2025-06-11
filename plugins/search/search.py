@@ -29,7 +29,8 @@ async def _(
     logger.info(f"搜索所用tags: {tags_list}")
 
     try:
-        img_info = await tags_search_img(tags_list)
+        key = global_cfg.get_key()
+        img_info = await tags_search_img(tags_list, key)
         logger.success(f"图片信息: {img_info}")
 
         img_url = img_info["url"]

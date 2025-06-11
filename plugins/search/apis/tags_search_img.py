@@ -11,7 +11,7 @@ headers = {
 
 async def _(
     q: list[str],
-    per_page: int,
+    per_page: int = 50,
     key: str = "",
     page: int = 1,
     sf: str = "score",

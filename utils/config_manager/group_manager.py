@@ -29,17 +29,20 @@ class GroupConfigManager:
             async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
                 content = await f.read()
                 loaded_data = json.loads(content)
-            if "__root__" in loaded_data:
-                return GroupId(__root__=loaded_data["__root__"])
-            else:
-                return GroupId(__root__=loaded_data)
+            return GroupId.parse_obj(loaded_data)
         else:
             return GroupId()
 
     async def save(self):
         """将当前的配置保存到 JSON 文件"""
+        data_dict = self.data.dict()
+        # 如果字典中有 "__root__" 键，直接使用其值
+        if "__root__" in data_dict and len(data_dict) == 1:
+            final_data = data_dict["__root__"]
+        else:
+            final_data = data_dict
         async with aiofiles.open(self.file_path, "w", encoding="utf-8") as f:
-            content = json.dumps(self.data.dict(), ensure_ascii=False, indent=2)
+            content = json.dumps(final_data, ensure_ascii=False, indent=2)
             await f.write(content)
 
     def get_status(self, group_id: str) -> bool:

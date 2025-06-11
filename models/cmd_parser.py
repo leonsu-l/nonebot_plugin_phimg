@@ -49,3 +49,8 @@ parser.add_argument(
     action="store_true",
     help="关闭当前群聊的搜图功能"
 )
+parser.add_argument(
+    "--status",
+    action="store_true",
+    help="获取当前群聊的搜图功能状态"
+)

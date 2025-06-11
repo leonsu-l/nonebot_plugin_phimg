@@ -1,10 +1,11 @@
 import json
+import aiofiles
 from pathlib import Path
 from functools import wraps
 
 from ...models import GroupConfig, GroupId
 
-def ensure_group_exists(func):
+def _ensure_group_exists(func):
     """装饰器：确保 group_id 及其配置存在"""
     @wraps(func)
     def wrapper(self, group_id: str, *args, **kwargs):
@@ -16,13 +17,18 @@ def ensure_group_exists(func):
 class GroupConfigManager:
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self.data = self.load()
+        self.data = None
 
-    def load(self) -> GroupId:
-        """从 JSON 文件加载配置，如果文件不存在则返回一个空的 Data 对象"""
+    async def init(self):
+        """异步初始化，加载配置"""
+        self.data = await self.load()
+
+    async def load(self) -> GroupId:
+        """从 JSON 文件异步加载配置"""
         if Path(self.file_path).exists():
-            with open(self.file_path, "r", encoding="utf-8") as f:
-                loaded_data = json.load(f)
+            async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
+                content = await f.read()
+                loaded_data = json.loads(content)
             if "__root__" in loaded_data:
                 return GroupId(__root__=loaded_data["__root__"])
             else:
@@ -30,10 +36,11 @@ class GroupConfigManager:
         else:
             return GroupId()
 
-    def save(self):
+    async def save(self):
         """将当前的配置保存到 JSON 文件"""
-        with open(self.file_path, "w", encoding="utf-8") as f:
-            json.dump(self.data.dict(), f, ensure_ascii=False, indent=2)
+        async with aiofiles.open(self.file_path, "w", encoding="utf-8") as f:
+            content = json.dumps(self.data.dict(), ensure_ascii=False, indent=2)
+            await f.write(content)
 
     def get_status(self, group_id: str) -> bool:
         """获取指定 group_id 的状态"""
@@ -45,40 +52,44 @@ class GroupConfigManager:
         cfg = self.data.__root__.get(group_id)
         return cfg.tags if cfg else []
 
-    def get_all(self) -> dict[str, GroupConfig]:
-        """返回所有 group_id 的配置"""
-        return self.data.__root__
+    @_ensure_group_exists
+    def get_info(self, group_id: str) -> GroupConfig:
+        """返回当前 group_id 的配置"""
+        cfg = self.data.__root__.get(group_id)
+        if not cfg:
+            raise ValueError()
+        return cfg
 
-    @ensure_group_exists
-    def update_tags(self, group_id: str, new_tags: list[str]):
+    @_ensure_group_exists
+    async def update_tags(self, group_id: str, new_tags: list[str]):
         """更新指定 group_id 的 tags"""
         self.data.__root__[group_id].tags = new_tags
-        self.save()
+        await self.save()
 
-    @ensure_group_exists
-    def add_tags(self, group_id: str, added_tags: list[str]):
+    @_ensure_group_exists
+    async def add_tags(self, group_id: str, added_tags: list[str]):
         """向指定 group_id 的 tags 中添加一列 tags"""
         current_tags = self.get_tags(group_id)
         all_tags = current_tags + list(added_tags)
         self.data.__root__[group_id].tags = list(set(all_tags))
-        self.save()
+        await self.save()
 
-    @ensure_group_exists
-    def remove_tags(self, group_id: str, tags: list[str]):
+    @_ensure_group_exists
+    async def remove_tags(self, group_id: str, tags: list[str]):
         """从指定 group_id 的 tags 中删除一列 tags"""
         for tag in tags:
             if tag in self.data.__root__[group_id].tags:
                 self.data.__root__[group_id].tags.remove(tag)
-        self.save()
+        await self.save()
 
-    @ensure_group_exists
-    def enable(self, group_id: str):
+    @_ensure_group_exists
+    async def enable(self, group_id: str):
         """启用指定 group_id 的配置"""
         self.data.__root__[group_id].enabled = True
-        self.save()
+        await self.save()
 
-    @ensure_group_exists
-    def disable(self, group_id: str):
+    @_ensure_group_exists
+    async def disable(self, group_id: str):
         """禁用指定 group_id 的配置"""
         self.data.__root__[group_id].enabled = False
-        self.save()
+        await self.save()

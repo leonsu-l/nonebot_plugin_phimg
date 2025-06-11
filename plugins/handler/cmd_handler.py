@@ -13,7 +13,7 @@ from nonebot.adapters.onebot.v11 import (
 )
 
 from ...models import cmd_parser
-from ...utils import group_cfg
+from ...utils import group_cfg, init
 from ..search import search
 
 driver = get_driver()
@@ -61,26 +61,41 @@ async def _(
         if opts.on and opts.off:
             await cmd.finish("不能同时开启和关闭搜图功能，请选择一个操作")
         if opts.on:
-            group_cfg.enable(str(event.group_id))
+            await group_cfg.enable(str(event.group_id))
             await cmd.send("搜图功能已在本群开启")
         elif opts.off:
-            group_cfg.disable(str(event.group_id))
+            await group_cfg.disable(str(event.group_id))
             await cmd.send("搜图功能已在本群关闭")
 
-    if not group_cfg.get_status(str(event.group_id)):
-        await cmd.finish("功能未在本群开启，管理员请用 .搜图 --on 启动")
+        add_msg = rm_msg = ""
+        if opts.add:
+            await group_cfg.add_tags(str(event.group_id), parse_tags(opts.add))
+            add_msg = f"添加成功，本群标签现为: {get_current_tags(str(event.group_id))}"
+        if opts.rm:
+            await group_cfg.remove_tags(str(event.group_id), parse_tags(opts.rm))
+            rm_msg = f"删除成功，本群标签现为: {get_current_tags(str(event.group_id))}"
+        if opts.add and opts.rm:
+            await cmd.send(f"修改成功，本群标签现为: {get_current_tags(str(event.group_id))}")
+        elif opts.add or opts.rm:
+            await cmd.send(rm_msg or add_msg)
+    
+    elif opts.on or opts.off or opts.add or opts.rm:
+        await cmd.finish("只有群聊管理员和超级管理员可以设置搜图功能")
 
-    if opts.add:
-        group_cfg.add_tags(str(event.group_id), parse_tags(opts.add))
-        await cmd.send(f"添加成功，本群标签现为: {group_cfg.get_tags(str(event.group_id))}")
-    if opts.rm:
-        group_cfg.remove_tags(str(event.group_id), parse_tags(opts.rm))
-        await cmd.send(f"删除成功，本群标签现为: {group_cfg.get_tags(str(event.group_id))}")
+
+    if not group_cfg.get_status(str(event.group_id)):
+        await cmd.finish("搜图未在本群开启，管理员请用 .搜图 --on 启动")
 
     if opts.tags:
-        group_tags = group_cfg.get_tags(str(event.group_id))
-        group_tags = group_tags if group_tags else ["无"]
-        await cmd.send(f"当前群聊内置标签：{', '.join(group_tags)}")
+        group_tags = get_current_tags(str(event.group_id))
+        await cmd.send(f"当前群聊内置标签：{group_tags}")
+    
+    if opts.status:
+        try:
+            status = group_cfg.get_info(str(event.group_id))
+            await cmd.send(f"当前群聊搜图功能状态：\n 启用：{status.enabled}\n 标签：{', '.join(status.tags)}")
+        except ValueError:
+            await cmd.send("未找到群聊配置，请联系管理员")
 
     query = {
         tags_str
@@ -94,3 +109,9 @@ def parse_tags(tags_str: str) -> list[str]:
     if not tags_str:
         return []
     return [tag.strip() for tag in tags_str.split(",") if tag.strip()]
+
+def get_current_tags(group_id: str) -> str:
+    """获取标签列表"""
+    group_tags = group_cfg.get_tags(str(group_id))
+    group_tags = group_tags or ["无"]
+    return ', '.join(group_tags)

@@ -10,3 +10,8 @@ global_cfg = GlobalConfigManager(__global_config_json)
 
 __group_config_json = str(CONFIG_PATH / "group_config.json")
 group_cfg = GroupConfigManager(__group_config_json)
+
+async def init():
+    """初始化配置管理器"""
+    await global_cfg.init()
+    await group_cfg.init()

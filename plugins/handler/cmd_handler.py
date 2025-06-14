@@ -55,9 +55,6 @@ async def _(
         output_message = cmd_parser.get_output()
         await cmd.finish(output_message)
 
-    logger.info(text)
-    logger.info(argv)
-
     # 初处理
     index = -1
     for _ in argv:
@@ -68,8 +65,6 @@ async def _(
         index = len(argv)
     tags_str = ''.join(argv[:index])
 
-    logger.info(argv[index:])
-    
     # 输入为纯参数或者tags加参数
     try:
         opts = cmd_parser.parse_args(argv[index:])
@@ -124,7 +119,7 @@ async def _(
     query = {
         tags_str
     }
-   
+
     if tags_str:
         await search(cmd, event=event, tags_str=tags_str)
 

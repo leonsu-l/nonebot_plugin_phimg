@@ -54,6 +54,11 @@ class GroupConfigManager:
         """获取指定 group_id 的 tags"""
         cfg = self.data.__root__.get(group_id)
         return cfg.tags if cfg else []
+    
+    def get_onglobal(self, group_id: str) -> bool:
+        """获取指定 group_id 的 onglobal 状态"""
+        cfg = self.data.__root__.get(group_id)
+        return cfg.onglobal if cfg else True
 
     @_ensure_group_exists
     def get_info(self, group_id: str) -> GroupConfig:
@@ -95,4 +100,16 @@ class GroupConfigManager:
     async def disable(self, group_id: str):
         """禁用指定 group_id 的配置"""
         self.data.__root__[group_id].enabled = False
+        await self.save()
+
+    @_ensure_group_exists
+    async def set_onglobal(self, group_id: str):
+        """设置指定 group_id 的 onglobal 状态"""
+        self.data.__root__[group_id].onglobal = True
+        await self.save()
+
+    @_ensure_group_exists
+    async def set_offglobal(self, group_id: str):
+        """设置指定 group_id 的 onglobal 状态"""
+        self.data.__root__[group_id].onglobal = False
         await self.save()

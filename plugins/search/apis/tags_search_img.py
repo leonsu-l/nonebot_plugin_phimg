@@ -69,7 +69,7 @@ async def _(
                 return data.get('images', [])
                 
     except aiohttp.ClientError as e:
-        raise DerpibooruAPIError(f"API 请求失败: {e.args[0]}: {e.args[1].message}")
+        raise DerpibooruAPIError(f"API 请求失败: {e}")
     except NoImagesFoundError:
         raise
     except Exception as e:

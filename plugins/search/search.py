@@ -16,14 +16,15 @@ from ...errors import NoImagesFoundError, DerpibooruAPIError
 async def _(
     cmd,
     event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent],
-    tags_str: str
+    tags_str: str,
+    onglobal: bool
 ):
     """处理搜图命令"""
     user_tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
     group_tags = group_cfg.get_tags(str(event.group_id)) if isinstance(event, GroupMessageEvent) else []
     global_tags = global_cfg.get_tags()
 
-    all_tags = group_tags + global_tags + user_tags
+    all_tags = group_tags + (global_tags if onglobal else []) + user_tags
     tags_list = list(set(all_tags)) # 去重
 
     logger.info(f"搜索所用tags: {tags_list}")
@@ -46,7 +47,7 @@ async def _(
         await cmd.finish( str(e) )
     except DerpibooruAPIError as e:
         logger.error(f"Derpibooru API 错误: {str(e)}")
-        await cmd.finish( str(e) )
+        await cmd.finish("网络错误，请联系bot管理员")
     except FinishedException as e:
         raise
     except Exception as e:

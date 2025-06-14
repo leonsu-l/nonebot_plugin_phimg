@@ -86,6 +86,15 @@ async def _(
             await group_cfg.disable(str(event.group_id))
             await cmd.send("搜图功能已在本群关闭")
 
+        if opts.onglobal and opts.offglobal:
+            await cmd.finish("不能同时开启和关闭全局标签，请选择一个操作")
+        if opts.onglobal:
+            await group_cfg.set_onglobal(str(event.group_id))
+            await cmd.send("全局标签已启用")
+        elif opts.offglobal:
+            await group_cfg.set_offglobal(str(event.group_id))
+            await cmd.send("全局标签已禁用")
+
         add_msg = rm_msg = ""
         if opts.add:
             await group_cfg.add_tags(str(event.group_id), parse_tags(opts.add))
@@ -112,22 +121,22 @@ async def _(
     if opts.status:
         try:
             status = group_cfg.get_info(str(event.group_id))
-            await cmd.send(f"当前群聊搜图功能状态：\n 启用：{status.enabled}\n 标签：{', '.join(status.tags)}")
+            await cmd.finish(f"当前群聊搜图功能状态：\n 启用：{status.enabled}\n 标签：{', '.join(status.tags)}\n 全局标签：{'启用' if status.onglobal else '禁用'}")
         except ValueError:
-            await cmd.send("未找到群聊配置，请联系管理员")
+            await cmd.finish("未找到群聊配置，请联系管理员")
 
-    query = {
-        tags_str
-    }
+    # query = {
+    #     tags_str
+    # }
 
     if tags_str:
-        await search(cmd, event=event, tags_str=tags_str)
+        await search(cmd, event=event, tags_str=tags_str, onglobal=group_cfg.get_onglobal(str(event.group_id)))
 
 def parse_tags(tags_raw: str) -> list[str]:
     """解析标签字符串为标签列表"""
     if not tags_raw:
         return []
-    tags_str = ''.join(tags_raw).strip()
+    tags_str = ' '.join(tags_raw).strip()
     return [tag.strip() for tag in tags_str.split(",") if tag.strip()]
 
 def get_current_tags(group_id: str) -> str:

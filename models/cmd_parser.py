@@ -56,3 +56,13 @@ parser.add_argument(
     action="store_true",
     help="获取当前群聊的搜图功能状态"
 )
+parser.add_argument(
+    "--onglobal",
+    action="store_true",
+    help="启用全局标签"
+)
+parser.add_argument(
+    "--offglobal",
+    action="store_true",
+    help="关闭全局标签"
+)

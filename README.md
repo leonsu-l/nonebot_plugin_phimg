@@ -1,6 +1,7 @@
 ### 使用方法
 * 创建python环境（没有版本要求）
 * 初始化nonebot2
+  * __建议通过nonebot2官方脚手架初始化nonebot，一键安装环境依赖__
 * 在你nonebot插件所在路径拉取仓库
 * 通过```requirements.txt```安装所需pip包
 * 当前插件根目录创一个config路径

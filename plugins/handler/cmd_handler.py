@@ -63,7 +63,7 @@ async def _(
             break
     if index == -1:
         index = len(argv)
-    tags_str = ''.join(argv[:index])
+    tags_str = ' '.join(argv[:index])
 
     # 输入为纯参数或者tags加参数
     try:

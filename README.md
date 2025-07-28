@@ -7,3 +7,7 @@
 * 当前插件根目录创一个config路径
   * _配置文件所在目录，代码里忘了捕获错误，会爆（）_ ~~我是2B~~
 * 源神，启动！
+
+### 老插件
+* [nonebot-plugin-dbimg](https://github.com/leonsu-l/nonebot-plugin-dbimg)
+* 本插件是基于此插件功能的完全重构版

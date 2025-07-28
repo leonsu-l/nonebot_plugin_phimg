@@ -4,7 +4,6 @@ import shlex
 from nonebot import get_driver, on_command
 from nonebot.params import CommandArg
 from nonebot.log import logger
-from nonebot.permission import SUPERUSER
 from nonebot.adapters.onebot.v11 import (
     MessageEvent,
     PrivateMessageEvent,
@@ -34,6 +33,8 @@ translation_table = str.maketrans({
 
 driver = get_driver()
 driver.config.command_start = {".", "。"}
+
+superusers = driver.config.superusers
 
 cmd = on_command("搜图")
 
@@ -75,8 +76,19 @@ async def _(
         await cmd.finish(output_message)
     except Exception as e:
         await cmd.finish(f"参数解析出错：{e}")
-     
-    if event.user_id == SUPERUSER or event.sender.role in ["owner", "admin"]:
+
+    if opts.status:
+        try:
+            status = group_cfg.get_info(str(event.group_id))
+            await cmd.finish(
+                f"当前群聊搜图功能状态：\n 启用：{status.enabled}\n 标签：{', '.join(status.tags)}\n 全局标签：{'启用' if status.onglobal else '禁用'}")
+        except ValueError:
+            await cmd.finish("未找到群聊配置，请联系管理员")
+
+    if opts.on or opts.off or opts.add or opts.rm or opts.onglobal or opts.offglobal:
+        if not authenticate(event):
+            await cmd.finish("只有群聊管理员和超级管理员可以设置搜图功能")
+
         if opts.on and opts.off:
             await cmd.finish("不能同时开启和关闭搜图功能，请选择一个操作")
         if opts.on:
@@ -106,10 +118,9 @@ async def _(
             await cmd.send(f"修改成功，本群标签现为: {get_current_tags(str(event.group_id))}")
         elif opts.add or opts.rm:
             await cmd.send(rm_msg or add_msg)
-    
-    elif opts.on or opts.off or opts.add or opts.rm:
-        await cmd.finish("只有群聊管理员和超级管理员可以设置搜图功能")
 
+        if not tags_str:
+            return
 
     if not group_cfg.get_status(str(event.group_id)):
         await cmd.finish("搜图未在本群开启，管理员请用 .搜图 --on 启动")
@@ -117,13 +128,6 @@ async def _(
     if opts.tags:
         group_tags = get_current_tags(str(event.group_id))
         await cmd.send(f"当前群聊内置标签：{group_tags}")
-    
-    if opts.status:
-        try:
-            status = group_cfg.get_info(str(event.group_id))
-            await cmd.finish(f"当前群聊搜图功能状态：\n 启用：{status.enabled}\n 标签：{', '.join(status.tags)}\n 全局标签：{'启用' if status.onglobal else '禁用'}")
-        except ValueError:
-            await cmd.finish("未找到群聊配置，请联系管理员")
 
     # query = {
     #     tags_str
@@ -144,3 +148,10 @@ def get_current_tags(group_id: str) -> str:
     group_tags = group_cfg.get_tags(str(group_id))
     group_tags = group_tags or ["无"]
     return ', '.join(group_tags)
+
+def authenticate(event: MessageEvent) -> bool:
+    """验证用户是否为超级管理员或群管理员"""
+    if isinstance(event, GroupMessageEvent):
+        logger.info(f"Authenticating user {event.user_id} in group {event.group_id}")
+    return ((str(event.user_id) in superusers) or
+            (isinstance(event, GroupMessageEvent) and event.sender.role in ["owner", "admin"]))

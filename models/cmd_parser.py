@@ -4,7 +4,7 @@ from .argument_parser import CustomArgumentParser
 parser = CustomArgumentParser(
     prog=".搜图",
     add_help=False,
-    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀",
+    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀 \n  有⭐的命令必须是群聊管理员或超级管理员才能使用",
     formatter_class=argparse.RawDescriptionHelpFormatter
 )
 parser.add_argument(
@@ -26,7 +26,7 @@ parser.add_argument(
     nargs='*',
     type=str,
     metavar="<tags>",
-    help="添加标签，多个标签用逗号分隔"
+    help="添加标签，多个标签用逗号分隔⭐"
 )
 parser.add_argument(
     "--rm",
@@ -34,7 +34,7 @@ parser.add_argument(
     nargs='*',
     type=str,
     metavar="<tags>",
-    help="删除标签，多个标签用逗号分隔"
+    help="删除标签，多个标签用逗号分隔⭐"
 )
 parser.add_argument(
     "--tags",
@@ -44,12 +44,12 @@ parser.add_argument(
 parser.add_argument(
     "--on",
     action="store_true",
-    help="开启当前群聊的搜图功能"
+    help="开启当前群聊的搜图功能⭐"
 )
 parser.add_argument(
     "--off",
     action="store_true",
-    help="关闭当前群聊的搜图功能"
+    help="关闭当前群聊的搜图功能⭐"
 )
 parser.add_argument(
     "--status",
@@ -59,10 +59,10 @@ parser.add_argument(
 parser.add_argument(
     "--onglobal",
     action="store_true",
-    help="启用全局标签"
+    help="启用全局标签⭐"
 )
 parser.add_argument(
     "--offglobal",
     action="store_true",
-    help="关闭全局标签"
+    help="关闭全局标签⭐"
 )

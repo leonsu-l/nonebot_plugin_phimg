@@ -32,7 +32,6 @@ translation_table = str.maketrans({
 })
 
 driver = get_driver()
-driver.config.command_start = {".", "。"}
 
 superusers = driver.config.superusers
 

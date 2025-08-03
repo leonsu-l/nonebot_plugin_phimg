@@ -7,6 +7,7 @@ from nonebot.adapters.onebot.v11 import (
     PrivateMessageEvent,
     GroupMessageEvent,
     MessageSegment,
+    Bot
 )
 
 from . import tags_search_img
@@ -17,7 +18,8 @@ async def _(
     cmd,
     event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent],
     tags_str: str,
-    onglobal: bool
+    onglobal: bool,
+    bot: Bot
 ):
     """处理搜图命令"""
     user_tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
@@ -36,11 +38,34 @@ async def _(
 
         img_url = img_info["url"]
         img_score = img_info["score"]
-        image = MessageSegment.image(img_url)
         img_id = img_url.split('/')[-2] if img_url else None
-
+        info_text = f"id: {img_id}\nscore: {img_score}\ntags: {', '.join(tags_list)}"
         at_user = MessageSegment.at(event.user_id)
-        await cmd.send(at_user + image + f"id: {img_id}\nscore: {img_score}\ntags: {', '.join(tags_list)}")
+
+        if img_url.lower().endswith('.webm'):
+            messages = [
+                {
+                    "type": "node",
+                    "data": {
+                        "name": "DBImg",
+                        "uin": str(event.self_id),
+                        "content": [MessageSegment.video(img_url)]
+                    }
+                },
+                {
+                    "type": "node",
+                    "data": {
+                        "name": "DBImg",
+                        "uin": str(event.self_id),
+                        "content": info_text
+                    }
+                }
+            ]
+            await bot.send_group_forward_msg(group_id=event.group_id, messages=messages)
+        else:
+            image = MessageSegment.image(img_url)
+            await cmd.send(at_user + image + info_text)
+
         await cmd.finish()
     except NoImagesFoundError as e:
         logger.error(f"无图片: {str(e)}")

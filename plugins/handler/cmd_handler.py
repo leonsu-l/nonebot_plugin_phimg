@@ -5,6 +5,7 @@ from nonebot import get_driver, on_command
 from nonebot.params import CommandArg
 from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (
+    Bot,
     MessageEvent,
     PrivateMessageEvent,
     GroupMessageEvent,
@@ -39,6 +40,7 @@ cmd = on_command("搜图")
 
 @cmd.handle()
 async def _(
+    bot: Bot,
     event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent], 
     arg: Message = CommandArg()
 ):
@@ -133,7 +135,7 @@ async def _(
     # }
 
     if tags_str:
-        await search(cmd, event=event, tags_str=tags_str, onglobal=group_cfg.get_onglobal(str(event.group_id)))
+        await search(cmd, event=event, tags_str=tags_str, onglobal=group_cfg.get_onglobal(str(event.group_id)), bot=bot)
 
 def parse_tags(tags_raw: str) -> list[str]:
     """解析标签字符串为标签列表"""

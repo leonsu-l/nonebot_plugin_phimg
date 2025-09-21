@@ -1,7 +1,6 @@
-from pydantic import BaseModel, Field
-from nonebot import get_driver
+from pydantic import BaseModel
 
 class GlobalConfig(BaseModel):
-    key: str = Field(default_factory=lambda: getattr(get_driver().config, "dbimg_key", ""))
-    enabled: bool = Field(default_factory=lambda: getattr(get_driver().config, "dbimg_enabled", True))
-    tags: list[str] = Field(default_factory=lambda: getattr(get_driver().config, "dbimg_tags", ["safe"]))
+    key: str = ""
+    enabled: bool = True
+    tags: list[str] = ["safe"]

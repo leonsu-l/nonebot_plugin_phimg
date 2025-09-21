@@ -105,8 +105,13 @@ async def _(
             await group_cfg.set_onglobal(str(event.group_id))
             await cmd.send("全局标签已启用")
         elif opts.offglobal:
+            if not hasattr(cmd, 'confirm_offglobal'):
+                await cmd.send("关闭全局标签，机器人将会搜出非safe图片\n请自行承担可能的炸群风险\n再输入一遍指令确认关闭")
+                cmd.confirm_offglobal = True
+                return
             await group_cfg.set_offglobal(str(event.group_id))
             await cmd.send("全局标签已禁用")
+            del cmd.confirm_offglobal
 
         add_msg = rm_msg = ""
         if opts.add:

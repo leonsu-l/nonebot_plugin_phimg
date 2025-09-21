@@ -7,11 +7,11 @@
 * 源神，启动！
 
 ### 配置项
-- ***tencentcloud_common_region `str`***  
+- ***DBIMG_KEY `str`***  
   &nbsp;&nbsp;&nbsp;&nbsp;API密钥  
-- ***tencentcloud_common_secretid `bool`***  
+- ***DBIMG_ENABLED `bool`***  
   &nbsp;&nbsp;&nbsp;&nbsp;是否默认启用插件
-- ***tencentcloud_common_secretkey `list[str]`***  
+- ***DBIMG_TAGS `list[str]`***  
   &nbsp;&nbsp;&nbsp;&nbsp;全局标签
 ```python
 # .env.prod

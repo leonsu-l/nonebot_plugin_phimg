@@ -4,9 +4,21 @@
   * __建议通过nonebot2官方脚手架初始化nonebot，一键安装环境依赖__
 * 在你nonebot插件所在路径拉取仓库
 * 通过```requirements.txt```安装所需pip包
-* 当前插件根目录创一个config路径
-  * _配置文件所在目录，代码里忘了捕获错误，会爆（）_ ~~我是2B~~
 * 源神，启动！
+
+### 配置项
+- ***tencentcloud_common_region `str`***  
+  &nbsp;&nbsp;&nbsp;&nbsp;API密钥  
+- ***tencentcloud_common_secretid `bool`***  
+  &nbsp;&nbsp;&nbsp;&nbsp;是否默认启用插件
+- ***tencentcloud_common_secretkey `list[str]`***  
+  &nbsp;&nbsp;&nbsp;&nbsp;全局标签
+```python
+# .env.prod
+DBIMG_KEY="your_api_key"
+DBIMG_ENABLED=True
+DBIMG_TAGS=["safe"]
+```
 
 ### 老插件
 * [nonebot-plugin-dbimg](https://github.com/leonsu-l/nonebot-plugin-dbimg)

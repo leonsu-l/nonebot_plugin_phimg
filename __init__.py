@@ -4,8 +4,8 @@ from nonebot import get_driver
 from .utils import init
 
 __plugin_meta__ = PluginMetadata(
-    name = "EQAD Derpibooru图片搜索",
-    description = "从Derpibooru搜索图片",
+    name = "EQAD Philomena图片搜索",
+    description = "在使用Philomena搭建的图站搜索图片",
     usage = ".搜图 [tags/on/off]",
     type = "application"
 )

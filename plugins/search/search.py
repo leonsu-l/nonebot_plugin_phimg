@@ -12,7 +12,7 @@ from nonebot.adapters.onebot.v11 import (
 
 from . import tags_search_img
 from ...utils import group_cfg, global_cfg
-from ...errors import NoImagesFoundError, DerpibooruAPIError
+from ...errors import NoImagesFoundError, PhilomenaAPIError
 
 async def _(
     cmd,
@@ -47,7 +47,7 @@ async def _(
                 {
                     "type": "node",
                     "data": {
-                        "name": "DBImg",
+                        "name": "Phimg",
                         "uin": str(event.self_id),
                         "content": [MessageSegment.video(img_url)]
                     }
@@ -55,7 +55,7 @@ async def _(
                 {
                     "type": "node",
                     "data": {
-                        "name": "DBImg",
+                        "name": "Phimg",
                         "uin": str(event.self_id),
                         "content": info_text
                     }
@@ -70,8 +70,8 @@ async def _(
     except NoImagesFoundError as e:
         logger.error(f"无图片: {str(e)}")
         await cmd.finish( str(e) )
-    except DerpibooruAPIError as e:
-        logger.error(f"Derpibooru API 错误: {str(e)}")
+    except PhilomenaAPIError as e:
+        logger.error(f"Philomena API 错误: {str(e)}")
         await cmd.finish("网络错误，请联系bot管理员")
     except FinishedException as e:
         raise

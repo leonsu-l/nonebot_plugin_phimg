@@ -2,7 +2,7 @@ import aiohttp
 from urllib.parse import urlencode
 from typing import Union
 
-from ....errors import DerpibooruAPIError, NoImagesFoundError
+from ....errors import PhilomenaAPIError, NoImagesFoundError
 
 headers = {
     "Accept": "application/json",
@@ -24,7 +24,7 @@ async def _(
     Args:
         q: 搜索标签列表（必需）
         per_page: 每页图片数量
-        key: Derpibooru API 密钥
+        key: Philomena API 密钥
         page: 页码
         sf: 排序字段 (score, created_at, etc.)
         sd: 排序方向 (desc, asc)
@@ -35,7 +35,7 @@ async def _(
         
     Raises:
         NoImagesFoundError: 未找到匹配的图片
-        DerpibooruAPIError: API 请求失败
+        PhilomenaAPIError: API 请求失败
     """
     if not q:
         raise ValueError("api内部错误: 搜索标签不能为空")
@@ -69,8 +69,8 @@ async def _(
                 return data.get('images', [])
                 
     except aiohttp.ClientError as e:
-        raise DerpibooruAPIError(f"API 请求失败: {e}")
+        raise PhilomenaAPIError(f"API 请求失败: {e}")
     except NoImagesFoundError:
         raise
     except Exception as e:
-        raise DerpibooruAPIError(f"处理响应时出错: {e}")
+        raise PhilomenaAPIError(f"处理响应时出错: {e}")

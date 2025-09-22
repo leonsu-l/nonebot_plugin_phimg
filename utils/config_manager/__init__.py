@@ -4,7 +4,7 @@ import os
 from .global_manager import GlobalConfigManager
 from .group_manager import GroupConfigManager
 
-CONFIG_PATH = (Path(__file__).parent.parent.parent.parent / "phimg").resolve()
+CONFIG_PATH = Path.cwd() / "phimg"
 
 if not CONFIG_PATH.exists():
     os.makedirs(CONFIG_PATH, exist_ok=True)

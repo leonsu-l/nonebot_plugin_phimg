@@ -12,6 +12,8 @@ class GlobalConfigManager:
     async def init(self):
         """异步初始化，加载配置"""
         self.data = await self.load()
+        if not Path(self.file_path).exists():
+            await self.save()
 
     async def load(self) -> GlobalConfig:
         """从 JSON 文件加载配置，如果文件不存在则返回一个空的 Data 对象"""

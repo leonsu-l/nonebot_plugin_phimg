@@ -1,11 +1,11 @@
 from nonebot.plugin import PluginMetadata
-from nonebot import get_driver
+from nonebot import get_driver, logger
 
-from .utils import init
+from .services.managers import init
 
 __plugin_meta__ = PluginMetadata(
-    name = "EQAD Derpibooru图片搜索",
-    description = "从Derpibooru搜索图片",
+    name = "EQAD Philomena图片搜索",
+    description = "从Philomena搜索图片",
     usage = ".搜图 [tags/on/off]",
     type = "application"
 )
@@ -17,4 +17,6 @@ async def _():
     """NoneBot2 启动时初始化配置加载模块"""
     await init()
     
-from .plugins import cmd_handler
+from . import cmd_handler
+
+__all__ = ["cmd_handler"]

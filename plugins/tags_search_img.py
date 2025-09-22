@@ -1,6 +1,6 @@
 from random import randint
 
-from .apis import tags_search_img
+from ..services.apis import tags_search_img
 
 async def _(
     tags_list: list[str], 

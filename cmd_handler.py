@@ -12,9 +12,9 @@ from nonebot.adapters.onebot.v11 import (
     Message,
 )
 
-from ...models import cmd_parser
-from ...utils import group_cfg, init
-from ..search import search
+from .models import cmd_parser
+from .plugins import search
+from .services.managers import group_cfg, command_manager
 
 translation_table = str.maketrans({
     '；': ';',           # 将 ； 替换为 ;
@@ -79,81 +79,52 @@ async def _(
         await cmd.finish(f"参数解析出错：{e}")
 
     if opts.status:
-        try:
-            status = group_cfg.get_info(str(event.group_id))
-            await cmd.finish(
-                f"当前群聊搜图功能状态：\n 启用：{status.enabled}\n 标签：{', '.join(status.tags)}\n 全局标签：{'启用' if status.onglobal else '禁用'}")
-        except ValueError:
-            await cmd.finish("未找到群聊配置，请联系管理员")
+        result = await command_manager.handle_status(event)
+        await cmd.finish(result)
 
     if opts.on or opts.off or opts.add or opts.rm or opts.onglobal or opts.offglobal:
         if not authenticate(event):
             await cmd.finish("只有群聊管理员和超级管理员可以设置搜图功能")
 
-        if opts.on and opts.off:
-            await cmd.finish("不能同时开启和关闭搜图功能，请选择一个操作")
-        if opts.on:
-            await group_cfg.enable(str(event.group_id))
-            await cmd.send("搜图功能已在本群开启")
-        elif opts.off:
-            await group_cfg.disable(str(event.group_id))
-            await cmd.send("搜图功能已在本群关闭")
+        # 处理开启/关闭
+        result = await command_manager.handle_enable_disable(event, opts)
+        if result:
+            await cmd.send(result)
 
-        if opts.onglobal and opts.offglobal:
-            await cmd.finish("不能同时开启和关闭全局标签，请选择一个操作")
-        if opts.onglobal:
-            await group_cfg.set_onglobal(str(event.group_id))
-            await cmd.send("全局标签已启用")
-        elif opts.offglobal:
-            if not hasattr(cmd, 'confirm_offglobal'):
-                await cmd.send("关闭全局标签，机器人将会搜出非safe图片\n请自行承担可能的炸群风险\n再输入一遍指令确认关闭")
-                cmd.confirm_offglobal = True
+        # 处理全局标签
+        result, need_confirm = await command_manager.handle_global_tags(event, opts, cmd)
+        if result:
+            await cmd.send(result)
+            if need_confirm:
                 return
-            await group_cfg.set_offglobal(str(event.group_id))
-            await cmd.send("全局标签已禁用")
-            del cmd.confirm_offglobal
 
-        add_msg = rm_msg = ""
-        if opts.add:
-            await group_cfg.add_tags(str(event.group_id), parse_tags(opts.add))
-            add_msg = f"添加成功，本群标签现为: {get_current_tags(str(event.group_id))}"
-        if opts.rm:
-            await group_cfg.remove_tags(str(event.group_id), parse_tags(opts.rm))
-            rm_msg = f"删除成功，本群标签现为: {get_current_tags(str(event.group_id))}"
-        if opts.add and opts.rm:
-            await cmd.send(f"修改成功，本群标签现为: {get_current_tags(str(event.group_id))}")
-        elif opts.add or opts.rm:
-            await cmd.send(rm_msg or add_msg)
+        # 处理标签修改
+        result = await command_manager.handle_tags_modification(event, opts)
+        if result:
+            await cmd.send(result)
 
         if not tags_str:
             return
 
-    if not group_cfg.get_status(str(event.group_id)):
+    if not command_manager.check_feature_enabled(event):
         await cmd.finish("搜图未在本群开启，管理员请用 .搜图 --on 启动")
 
     if opts.tags:
-        group_tags = get_current_tags(str(event.group_id))
-        await cmd.send(f"当前群聊内置标签：{group_tags}")
+        result = command_manager.get_tags_info(event)
+        await cmd.send(result)
 
     # query = {
     #     tags_str
     # }
 
     if tags_str:
-        await search(cmd, event=event, tags_str=tags_str, onglobal=group_cfg.get_onglobal(str(event.group_id)), bot=bot)
-
-def parse_tags(tags_raw: str) -> list[str]:
-    """解析标签字符串为标签列表"""
-    if not tags_raw:
-        return []
-    tags_str = ' '.join(tags_raw).strip()
-    return [tag.strip() for tag in tags_str.split(",") if tag.strip()]
-
-def get_current_tags(group_id: str) -> str:
-    """获取标签列表"""
-    group_tags = group_cfg.get_tags(str(group_id))
-    group_tags = group_tags or ["无"]
-    return ', '.join(group_tags)
+        await search(
+            cmd, 
+            event=event, 
+            tags_str=tags_str, 
+            onglobal=group_cfg.get_onglobal(str(event.group_id)), 
+            bot=bot
+        )
 
 def authenticate(event: MessageEvent) -> bool:
     """验证用户是否为超级管理员或群管理员"""

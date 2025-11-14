@@ -7,124 +7,37 @@ from nonebot.log import logger
 from nonebot.adapters.onebot.v11 import (
     Bot,
     MessageEvent,
+    MessageSegment,
     PrivateMessageEvent,
     GroupMessageEvent,
     Message,
 )
 
-from .models import cmd_parser
-from .plugins import search
+from .models import cmd_search_config_parser, cmd_search_parser
+from .plugins import handle_search
 from .services.managers import group_cfg, command_manager
 
-translation_table = str.maketrans({
-    '；': ';',           # 将 ； 替换为 ;
-    '：': ':',           # 将 ： 替换为 :
-    '，': ',',          # 将 ，替换为 ,
-    '（': '(',          # 将 （ 替换为 (
-    '）': ')',          # 将 ） 替换为 )
-    '【': '[',          # 将 【 替换为 [
-    '】': ']',          # 将 】 替换为 ]
-    '《': '<',          # 将 《 替换为 <
-    '》': '>',          # 将 》 替换为 >
-    '？': '?',          # 将 中文问号 替换为 英文问号
-    '！': '!',          # 将 中文感叹号 替换为 英文感叹号
-    '。': '.',          # 将 中文句号 替换为 英文句号
-    '、': ',',          # 将 中文顿号 替换为 英文逗号
+__translation_table = str.maketrans({
+    '；': ';',
+    '：': ':',
+    '，': ',',
+    '（': '(',
+    '）': ')',
+    '【': '[',
+    '】': ']',
+    '《': '<',
+    '》': '>',
+    '？': '?',
+    '！': '!',
+    '。': '.',
+    '、': ',',
 })
 
 driver = get_driver()
-
 superusers = driver.config.superusers
 
-cmd = on_command("搜图")
-
-@cmd.handle()
-async def _(
-    bot: Bot,
-    event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent], 
-    arg: Message = CommandArg()
-):
-    if not isinstance(event, GroupMessageEvent):
-        await cmd.finish("搜图仅限群聊使用。")
-
-    text_raw = arg.extract_plain_text().strip()
-    text = text_raw.translate(translation_table)
-    argv = shlex.split(text)
-    
-    # 如果没有输入任何内容，直接返回帮助信息
-    if not text:
-        cmd_parser.print_help()
-        output_message = cmd_parser.get_output()
-        await cmd.finish(output_message)
-
-    # 初处理
-    index = -1
-    for _ in argv:
-        if _.startswith("--"):
-            index = argv.index(_)
-            break
-    if index == -1:
-        index = len(argv)
-    tags_str = ' '.join(argv[:index])
-
-    # 输入为纯参数或者tags加参数
-    try:
-        opts = cmd_parser.parse_args(argv[index:])
-        logger.info(opts)
-    except SystemExit:
-        # 获取帮助信息或错误信息
-        output_message = cmd_parser.get_output()
-        await cmd.finish(output_message)
-    except Exception as e:
-        await cmd.finish(f"参数解析出错：{e}")
-
-    if opts.status:
-        result = await command_manager.handle_status(event)
-        await cmd.finish(result)
-
-    if opts.on or opts.off or opts.add or opts.rm or opts.onglobal or opts.offglobal:
-        if not authenticate(event):
-            await cmd.finish("只有群聊管理员和超级管理员可以设置搜图功能")
-
-        # 处理开启/关闭
-        result = await command_manager.handle_enable_disable(event, opts)
-        if result:
-            await cmd.send(result)
-
-        # 处理全局标签
-        result, need_confirm = await command_manager.handle_global_tags(event, opts, cmd)
-        if result:
-            await cmd.send(result)
-            if need_confirm:
-                return
-
-        # 处理标签修改
-        result = await command_manager.handle_tags_modification(event, opts)
-        if result:
-            await cmd.send(result)
-
-        if not tags_str:
-            return
-
-    if not command_manager.check_feature_enabled(event):
-        await cmd.finish("搜图未在本群开启，管理员请用 .搜图 --on 启动")
-
-    if opts.tags:
-        result = command_manager.get_tags_info(event)
-        await cmd.send(result)
-
-    # query = {
-    #     tags_str
-    # }
-
-    if tags_str:
-        await search(
-            cmd, 
-            event=event, 
-            tags_str=tags_str, 
-            onglobal=group_cfg.get_onglobal(str(event.group_id)), 
-            bot=bot
-        )
+cmd_search = on_command("搜图")
+cmd_search_config = on_command("搜图配置")
 
 def authenticate(event: MessageEvent) -> bool:
     """验证用户是否为超级管理员或群管理员"""
@@ -132,3 +45,134 @@ def authenticate(event: MessageEvent) -> bool:
         logger.info(f"Authenticating user {event.user_id} in group {event.group_id}")
     return ((str(event.user_id) in superusers) or
             (isinstance(event, GroupMessageEvent) and event.sender.role in ["owner", "admin"]))
+
+
+def is_image(reply):
+    """检查消息段是否为图片类型"""
+    referenced_msg = reply
+    for segment in referenced_msg.message:
+        # 判断该 segment 是否为图片类型
+        logger.info(f"消息段类型: {segment.type}")
+        if isinstance(segment, MessageSegment) and segment.type == 'image':
+            return segment
+    return False
+
+
+def raw_cmd_handler(text_raw: str, is_image_flag: bool = False, method: str = 'search'):
+    text = text_raw.translate(__translation_table)
+    argv = shlex.split(text)
+
+    # 如果没有输入任何内容，直接返回帮助信息
+    if not text:
+        argv = ['--help']
+    if is_image_flag and not argv:
+        argv = ['0.25']
+
+    if method == 'search':
+        return cmd_search_parser.parse_args(argv)
+    else:
+        return cmd_search_config_parser.parse_args(argv)
+
+
+@cmd_search.handle()
+async def search(
+    bot: Bot,
+    event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent], 
+    arg: Message = CommandArg()
+):
+    if not isinstance(event, GroupMessageEvent):
+        await cmd_search.finish("搜图仅限群聊使用。")
+
+    if event.reply:
+        image_segment = is_image(event.reply)
+
+    text_raw = arg.extract_plain_text().strip()
+    try:
+        if event.reply and image_segment:
+            opts = raw_cmd_handler(text_raw, is_image_flag=bool(image_segment))
+        else:
+            opts = raw_cmd_handler(text_raw)
+        logger.info(opts)
+    except SystemExit:
+        # 获取帮助信息或错误信息
+        output_message = cmd_search_parser.get_output()
+        await cmd_search.finish(output_message)
+    except Exception as e:
+        await cmd_search.finish(f"参数解析出错：{e}")
+
+    if opts.status:
+        result = await command_manager.handle_status(event)
+        await cmd_search.finish(result)
+
+    if not command_manager.check_feature_enabled(event):
+        await cmd_search.finish("搜图未在本群开启，管理员请用 .搜图配置 --on 启动")
+
+    if opts.tags:
+        result = command_manager.get_tags_info(event)
+        await cmd_search.send(result)
+
+    search_query = {}
+
+    if event.reply:
+        if image_segment:
+            search_query['mode'] = 'img2img'
+            image_url = image_segment.data.get('url')
+            if image_url is not None:
+                search_query["url"] = image_url
+            if opts.params:
+                search_query["distance"] = opts.params
+        else:
+            await cmd_search.finish("回复的消息中不包含图片。")
+    else:
+        search_query['mode'] = 'tags2img'
+        search_query["tags"] = opts.params
+
+    await handle_search(
+        cmd_search, 
+        event=event, 
+        onglobal=group_cfg.get_onglobal(str(event.group_id)), 
+        bot=bot,
+        search_query=search_query
+    )
+
+
+@cmd_search_config.handle()
+async def search_config(
+    bot: Bot,
+    event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent], 
+    arg: Message = CommandArg()
+):
+    if not authenticate(event):
+        await cmd_search_config.finish("只有群聊管理员和超级管理员可以配置搜图功能")
+
+    if not isinstance(event, GroupMessageEvent):
+        await cmd_search_config.finish("搜图仅限群聊使用。")
+
+    text_raw = arg.extract_plain_text().strip()
+    # 输入为纯参数或者tags加参数
+    try:
+        opts = raw_cmd_handler(text_raw, method='config')
+        logger.info(opts)
+    except SystemExit:
+        # 获取帮助信息或错误信息
+        output_message = cmd_search_config_parser.get_output()
+        await cmd_search_config.finish(output_message)
+    except Exception as e:
+        await cmd_search_config.finish(f"参数解析出错：{e}")
+
+    # 处理开启/关闭
+    result = await command_manager.handle_enable_disable(event, opts)
+    if result:
+        await cmd_search_config.send(result)
+
+    # 处理全局标签
+    result, need_confirm = await command_manager.handle_global_tags(event, opts, cmd_search_config)
+    if result:
+        await cmd_search_config.send(result)
+        if need_confirm:
+            return
+
+    # 处理标签修改
+    result = await command_manager.handle_tags_modification(event, opts)
+    if result:
+        await cmd_search_config.send(result)

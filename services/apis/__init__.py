@@ -1,7 +1,6 @@
-from .tags_search_img import _ as tags_search_img
-from .img_search_img import _ as img_search_img
+from .searcher import Tags2ImgSearcher, Img2ImgSearcher
 
 __all__ = [
-    "tags_search_img",
-    "img_search_img"
+    "Tags2ImgSearcher",
+    "Img2ImgSearcher"
 ]

@@ -44,14 +44,11 @@ class CommonSender(Sender):
         return super().msg
         
     @msg.setter
-    def msg(self, value: tuple[dict[str, int | str], str] | dict[str, int | str]) -> None:
+    def msg(self, value: tuple[dict[str, int | str], str]) -> None:
         """支持两种赋值方式: 仅信息字典 或 (信息字典, 标签) 元组"""
-        if isinstance(value, tuple):
-            info, tags = value
-            Sender.msg.fset(self, info)  # type: ignore
-            self._msg_info += f"\ntags: {tags}"
-        else:
-            Sender.msg.fset(self, value)  # type: ignore
+        info, tags = value
+        Sender.msg.fset(self, info)  # type: ignore
+        self._msg_info += f"\ntags: {tags}"
 
 
 class MergeForwardSender(CommonSender):
@@ -87,13 +84,15 @@ class MultiSegmentSender(Sender):
     def __init__(self, bot: Bot, user_id: int, group_id: int):
         super().__init__(bot, user_id, group_id)
         self.msg_list = [Message()]
+        self.distance = "0.25"
 
-    def add_messages(self, messages: list[dict[str, int | str]]) -> None:
+    def add_messages(self, messages: list[dict[str, int | str]], distance: str) -> None:
         """添加多条消息"""
         for info in messages:
             temp_sender = Sender(self.bot, 0, self.group_id)
             temp_sender.msg = info
             self.msg_list.append(temp_sender.msg)
+        self.distance = distance
     
     def send(self):
         """发送包含多个消息段的消息"""
@@ -102,5 +101,5 @@ class MultiSegmentSender(Sender):
             combined_msg += msg
         return self.bot.send_group_msg(
             group_id=self.group_id,
-            message=self.at_user + combined_msg
+            message=self.at_user + f"\ndistance: {self.distance}" + combined_msg
         )

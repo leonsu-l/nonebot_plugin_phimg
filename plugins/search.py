@@ -40,7 +40,7 @@ async def handle_search(
             logger.info(f"搜索所用tags: {tags_list}")
 
             query_params = {
-                "q": ','.join(tags_list),
+                "q": ', '.join(tags_list),
                 "key": global_cfg.get_key(),
                 'per_page': 50,
                 'page': 1,
@@ -49,7 +49,7 @@ async def handle_search(
             }
             searcher = Tags2ImgSearcher(query_params)
             selected_img = await searcher.select_img()
-            file_type = selected_img['view_url'].split('.')[-1].lower()
+            file_type = selected_img['view_url'].split('.')[-1].lower()  # type: ignore
             logger.info(f"选中图片类型: {file_type}")
 
             if file_type in ['webm', 'mp4']:
@@ -76,7 +76,7 @@ async def handle_search(
             packer = ImageListPacker(selected_img_list)
             packet = packer.get_packet()
             sender = MultiSegmentSender(bot, event.user_id, event.group_id)
-            sender.add_messages(packet)
+            sender.add_messages(packet, query_params['distance'])
             await sender.send()
 
     except NoImagesFoundError as e:

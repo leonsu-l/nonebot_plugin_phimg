@@ -4,7 +4,7 @@ from .argument_parser import CustomArgumentParser
 parser = CustomArgumentParser(
     prog=".搜图",
     add_help=False,
-    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀",
+    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀\n  图搜图使用方式为引用图片，默认匹配距离为0.25\n",
     formatter_class=argparse.RawDescriptionHelpFormatter
 )
 parser.add_argument(

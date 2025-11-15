@@ -5,7 +5,7 @@ from .services.managers import init
 
 __plugin_meta__ = PluginMetadata(
     name = "EQAD Philomena图片搜索",
-    description = "从Philomena搜索图片",
+    description = "从Philomena系图站搜索图片",
     usage = ".搜图 [tags/on/off]",
     type = "application"
 )

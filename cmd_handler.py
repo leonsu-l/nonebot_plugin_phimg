@@ -14,8 +14,8 @@ from nonebot.adapters.onebot.v11 import (
 )
 
 from .models import cmd_search_config_parser, cmd_search_parser
-from .plugins import handle_search
 from .services.managers import group_cfg, command_manager
+from .plugins import handle_search
 
 __translation_table = str.maketrans({
     '；': ';',
@@ -42,7 +42,7 @@ cmd_search_config = on_command("搜图配置")
 def authenticate(event: MessageEvent) -> bool:
     """验证用户是否为超级管理员或群管理员"""
     if isinstance(event, GroupMessageEvent):
-        logger.info(f"Authenticating user {event.user_id} in group {event.group_id}")
+        logger.info(f"验证用户 {event.user_id} 是否为 {event.group_id} 管理员")
     return ((str(event.user_id) in superusers) or
             (isinstance(event, GroupMessageEvent) and event.sender.role in ["owner", "admin"]))
 
@@ -65,7 +65,7 @@ def raw_cmd_handler(text_raw: str, is_image_flag: bool = False, method: str = 's
     # 如果没有输入任何内容，直接返回帮助信息
     if not text:
         argv = ['--help']
-    if is_image_flag and not argv:
+    if is_image_flag and not text:
         argv = ['0.25']
 
     if method == 'search':
@@ -83,15 +83,13 @@ async def search(
     if not isinstance(event, GroupMessageEvent):
         await cmd_search.finish("搜图仅限群聊使用。")
 
+    image_segment = None
     if event.reply:
         image_segment = is_image(event.reply)
 
     text_raw = arg.extract_plain_text().strip()
     try:
-        if event.reply and image_segment:
-            opts = raw_cmd_handler(text_raw, is_image_flag=bool(image_segment))
-        else:
-            opts = raw_cmd_handler(text_raw)
+        opts = raw_cmd_handler(text_raw, is_image_flag=bool(image_segment))
         logger.info(opts)
     except SystemExit:
         # 获取帮助信息或错误信息

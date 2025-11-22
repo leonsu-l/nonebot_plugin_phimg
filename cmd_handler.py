@@ -37,7 +37,7 @@ driver = get_driver()
 superusers = driver.config.superusers
 
 cmd_search = on_command("搜图")
-cmd_search_config = on_command("搜图配置")
+cmd_search_config = on_command("搜图-c", aliases={"搜图 -c"})
 
 def authenticate(event: MessageEvent) -> bool:
     """验证用户是否为超级管理员或群管理员"""
@@ -59,8 +59,17 @@ def is_image(reply):
 
 
 def raw_cmd_handler(text_raw: str, is_image_flag: bool = False, method: str = 'search'):
+    """处理原始命令文本，解析参数和选项"""
     text = text_raw.translate(__translation_table)
     argv = shlex.split(text)
+
+    # 第三方库问题，手动格式化前置参数
+    params = ''
+    for arg in list(argv):
+        if arg.startswith('--'):
+            break
+        params += arg + ' '
+        argv.pop(0)
 
     # 如果没有输入任何内容，直接返回帮助信息
     if not text:
@@ -69,9 +78,9 @@ def raw_cmd_handler(text_raw: str, is_image_flag: bool = False, method: str = 's
         argv = ['0.25']
 
     if method == 'search':
-        return cmd_search_parser.parse_args(argv)
+        return params, cmd_search_parser.parse_args(argv)
     else:
-        return cmd_search_config_parser.parse_args(argv)
+        return params, cmd_search_config_parser.parse_args(argv)
 
 
 @cmd_search.handle()
@@ -89,7 +98,7 @@ async def search(
 
     text_raw = arg.extract_plain_text().strip()
     try:
-        opts = raw_cmd_handler(text_raw, is_image_flag=bool(image_segment))
+        params, opts = raw_cmd_handler(text_raw, is_image_flag=bool(image_segment))
         logger.info(opts)
     except SystemExit:
         # 获取帮助信息或错误信息
@@ -109,7 +118,7 @@ async def search(
         result = command_manager.get_tags_info(event)
         await cmd_search.send(result)
 
-    search_query = {}
+    search_query: dict[str, str] = {}
 
     if event.reply:
         if image_segment:
@@ -117,13 +126,13 @@ async def search(
             image_url = image_segment.data.get('url')
             if image_url is not None:
                 search_query["url"] = image_url
-            if opts.params:
-                search_query["distance"] = opts.params
+            if params:
+                search_query["distance"] = params
         else:
             await cmd_search.finish("回复的消息中不包含图片。")
     else:
         search_query['mode'] = 'tags2img'
-        search_query["tags"] = opts.params
+        search_query["tags"] = params
 
     await handle_search(
         cmd_search, 
@@ -149,7 +158,7 @@ async def search_config(
     text_raw = arg.extract_plain_text().strip()
     # 输入为纯参数或者tags加参数
     try:
-        opts = raw_cmd_handler(text_raw, method='config')
+        _, opts = raw_cmd_handler(text_raw, method='config')
         logger.info(opts)
     except SystemExit:
         # 获取帮助信息或错误信息

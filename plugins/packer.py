@@ -2,6 +2,9 @@ from typing import Union
 
 class Packer:
     def __init__(self, img_info) -> None:
+        self.duplicate_of = img_info["duplicate_of"]
+        if img_info["duplicate_of"]:
+            return
         self.urls = img_info["representations"]
         self.score = img_info["score"]
         self.id = img_info["id"]
@@ -30,6 +33,8 @@ class ImageListPacker(ImagePacker):
         self.packet = []
         for img_info in img_info_list:
             packer = ImagePacker(img_info)
+            if packer.duplicate_of:
+                continue
             self.packet.append(packer.get_packet())
 
     def get_packet(self) -> list[dict[str, str | int]]:

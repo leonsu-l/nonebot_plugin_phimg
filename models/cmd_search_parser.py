@@ -4,7 +4,7 @@ from .argument_parser import CustomArgumentParser
 parser = CustomArgumentParser(
     prog=".搜图",
     add_help=False,
-    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀\n  图搜图使用方式为引用图片，默认匹配距离为0.25\n",
+    epilog=f"示例：\n  .搜图 <tags> # 直接通过标签搜索图片\n\n提示: \n  .和。均可作为命令前缀\n  图搜图使用方式为引用图片，默认匹配距离为0.25\n  所有参数及变量全部遵循呆站（Philomena系图站）搜索API规范",
     formatter_class=argparse.RawDescriptionHelpFormatter
 )
 parser.add_argument(
@@ -17,7 +17,7 @@ parser.add_argument(
 )
 parser.add_argument(
     '--help',
-    action='help', 
+    action='help',
     help='显示帮助信息'
 )
 parser.add_argument(
@@ -29,4 +29,47 @@ parser.add_argument(
     "--status",
     action="store_true",
     help="获取当前群聊的搜图功能状态"
+)
+parser.add_argument(
+    "--pp",
+    action="store",
+    nargs='?',
+    type=int,
+    metavar="PER_PAGE",
+    help="每页结果数量，默认为50",
+    default=50,
+)
+parser.add_argument(
+    "--p",
+    action="store",
+    nargs='?',
+    type=int,
+    metavar="PAGE",
+    help="页码，默认为1",
+    default=1,
+)
+parser.add_argument(
+    "--sf",
+    action="store",
+    nargs='?',
+    type=str,
+    help="排序字段，默认为score",
+    default="score",
+)
+parser.add_argument(
+    "--sd",
+    action="store",
+    nargs='?',
+    type=str,
+    help="排序方向，默认为desc",
+    default="desc",
+)
+parser.add_argument(
+    "--i",
+    action="store",
+    nargs='?',
+    type=int,
+    metavar="INDEX",
+    help="选择结果索引，默认为-1（即随机），最大值应为per_page减1",
+    default=-1,
 )

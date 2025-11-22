@@ -83,6 +83,14 @@ def raw_cmd_handler(text_raw: str, is_image_flag: bool = False, method: str = 's
         return params, cmd_search_config_parser.parse_args(argv)
 
 
+def is_number_str(s: str) -> bool:
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
 @cmd_search.handle()
 async def search(
     bot: Bot,
@@ -118,7 +126,7 @@ async def search(
         result = command_manager.get_tags_info(event)
         await cmd_search.send(result)
 
-    search_query: dict[str, str] = {}
+    search_query: dict[str, str | int | float] = {}
 
     if event.reply:
         if image_segment:
@@ -127,12 +135,20 @@ async def search(
             if image_url is not None:
                 search_query["url"] = image_url
             if params:
-                search_query["distance"] = params
+                if is_number_str(params):
+                    search_query["distance"] = float(params)
+                else:
+                    await cmd_search.finish("图片搜索仅支持数字参数，表示相似度距离（distance）。")
         else:
             await cmd_search.finish("回复的消息中不包含图片。")
     else:
         search_query['mode'] = 'tags2img'
         search_query["tags"] = params
+        search_query["per_page"] = opts.pp
+        search_query["page"] = opts.p
+        search_query["sf"] = opts.sf
+        search_query["sd"] = opts.sd
+        search_query["index"] = opts.i
 
     await handle_search(
         cmd_search, 

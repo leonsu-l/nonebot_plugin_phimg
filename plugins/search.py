@@ -32,6 +32,8 @@ async def handle_search(
     bot: Bot,
     search_query: dict
 ):
+    """处理搜索请求"""
+    index = search_query.get("index", -1)
     try:
         mode: str = search_query['mode']
         if mode == 'tags2img':
@@ -42,34 +44,39 @@ async def handle_search(
             query_params = {
                 "q": ', '.join(tags_list),
                 "key": global_cfg.get_key(),
-                'per_page': 50,
-                'page': 1,
-                'sf': "score",
-                'sd': "desc",
+                'per_page': search_query.get("per_page", 50),
+                'page': search_query.get("page", 1),
+                'sf': search_query.get("sf", "score"),
+                'sd': search_query.get("sd", "desc"),
             }
             searcher = Tags2ImgSearcher(query_params)
-            selected_img = await searcher.select_img()
+            selected_img = await searcher.select_img(index=index)
             file_type = selected_img['view_url'].split('.')[-1].lower()  # type: ignore
             logger.info(f"选中图片类型: {file_type}")
+
+            additional_msg = ''
+            if index >= query_params['per_page']:
+                logger.warning(f"索引 {index} 超出单页范围，默认随机选择图片")
+                additional_msg = f"索引 {index} 超出单页范围，已随机选择图片"
 
             if file_type in ['webm', 'mp4']:
                 packer = WebMPacker(selected_img)
                 packet = packer.get_packet()
                 sender = MergeForwardSender(bot, event.user_id, event.group_id)
-                sender.msg = (packet, query_params["q"])
+                sender.msg = (packet, query_params["q"], additional_msg)
                 await sender.send()
             else:
                 packer = ImagePacker(selected_img)
                 packet = packer.get_packet()
                 sender = CommonSender(bot, event.user_id, event.group_id)
-                sender.msg = (packet, query_params["q"])
+                sender.msg = (packet, query_params["q"], additional_msg)
                 await sender.send()
                 
         elif mode == 'img2img':
             query_params = {
                 "key": global_cfg.get_key(),
                 "url": search_query.get("url", ""),
-                "distance": search_query.get("distance", "0.25"),
+                "distance": search_query.get("distance", 0.25),
             }
             searcher = Img2ImgSearcher(query_params)
             selected_img_list = await searcher.select_img_list()

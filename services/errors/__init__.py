@@ -2,5 +2,6 @@ from .errors import *
 
 __all__ = [
     "NoImagesFoundError",
-    "PhilomenaAPIError"
+    "PhilomenaAPIError",
+    "ImageNumberExceedError",
 ]

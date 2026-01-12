@@ -52,9 +52,10 @@ def is_image(reply):
     referenced_msg = reply
     for segment in referenced_msg.message:
         # 判断该 segment 是否为图片类型
-        logger.info(f"消息段类型: {segment.type}")
         if isinstance(segment, MessageSegment) and segment.type == 'image':
+            logger.info(f"该消息段包含图片")
             return segment
+    logger.info("该消息段不包含图片")
     return False
 
 

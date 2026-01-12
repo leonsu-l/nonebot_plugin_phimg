@@ -29,7 +29,6 @@ class CustomArgumentParser(argparse.ArgumentParser):
         if arg_string.startswith('--'):
             return super()._parse_optional(arg_string)
         else:
-            # 单横线开头的视为位置参数
             return None
 
     def _customize_error_message(self, message):

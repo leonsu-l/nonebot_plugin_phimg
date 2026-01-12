@@ -11,19 +11,72 @@ from nonebot.adapters.onebot.v11 import (
 )
 
 from ..services.managers import group_cfg, global_cfg
-from ..services.errors import NoImagesFoundError, PhilomenaAPIError
+from ..services.errors import *
 
 from .packer import ImagePacker, WebMPacker, ImageListPacker
-from .sender import CommonSender, MergeForwardSender, MultiSegmentSender
+from .sender import CommonSender, MergeForwardSender, MultiSegmentSender, MessageInfo
 from ..services.apis import Tags2ImgSearcher, Img2ImgSearcher
 
-def parse_tags(tags_str: str, event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent], onglobal: bool) -> list[str]:
+VIDEO_TYPES = [
+    'webm',
+    'mp4'
+]
+
+
+def _parse_tags(tags_str: str, event: Union[MessageEvent, PrivateMessageEvent, GroupMessageEvent], onglobal: bool) -> list[str]:
     user_tags = [tag.strip() for tag in tags_str.split(",") if tag.strip()]
     group_tags = group_cfg.get_tags(str(event.group_id)) if isinstance(event, GroupMessageEvent) else []
     global_tags = global_cfg.get_tags() if onglobal else []
 
     all_tags = group_tags + global_tags + user_tags
-    return list(set(all_tags)) # 去重
+    return list(set(all_tags))  # 去重
+
+
+async def _send_single_image(
+    bot: Bot,
+    event: GroupMessageEvent,
+    packet: dict,
+    tags: str,
+    additional_msg: str,
+    file_type: str
+) -> None:
+    """发送单张图片或视频消息"""
+
+    msg_info = MessageInfo(
+        id=packet["id"],
+        score=packet["score"],
+        url=packet["url"],
+        tags=tags,
+        additional_msg=additional_msg or None
+    )
+    
+    if file_type in VIDEO_TYPES:
+        sender = MergeForwardSender(bot, event.user_id, event.group_id)
+    else:
+        sender = CommonSender(bot, event.user_id, event.group_id)
+    
+    sender.msg = msg_info
+    await sender.send()
+
+
+async def _send_image_list(
+    bot: Bot,
+    event: GroupMessageEvent,
+    packet_list: list[dict],
+    distance: float
+) -> None:
+    """发送多张图片列表"""
+    msg_info_list = [
+        MessageInfo(
+            id=packet["id"],
+            score=packet["score"],
+            url=packet["url"]
+        ) for packet in packet_list
+    ]
+    sender = MultiSegmentSender(bot, event.user_id, event.group_id)
+    sender.add_messages(msg_info_list, distance)
+    await sender.send()
+
 
 async def handle_search(
     cmd,
@@ -38,7 +91,7 @@ async def handle_search(
         mode: str = search_query['mode']
         if mode == 'tags2img':
             tags_str = search_query.get("tags", "")
-            tags_list = parse_tags(tags_str, event, onglobal)
+            tags_list = _parse_tags(tags_str, event, onglobal)
             logger.info(f"搜索所用tags: {tags_list}")
 
             query_params = {
@@ -59,18 +112,20 @@ async def handle_search(
                 logger.warning(f"索引 {index} 超出单页范围，默认随机选择图片")
                 additional_msg = f"索引 {index} 超出单页范围，已随机选择图片"
 
-            if file_type in ['webm', 'mp4']:
-                packer = WebMPacker(selected_img)
-                packet = packer.get_packet()
-                sender = MergeForwardSender(bot, event.user_id, event.group_id)
-                sender.msg = (packet, query_params["q"], additional_msg)
-                await sender.send()
+            if file_type in VIDEO_TYPES:
+                packer = WebMPacker(selected_img) # type: ignore
             else:
-                packer = ImagePacker(selected_img)
-                packet = packer.get_packet()
-                sender = CommonSender(bot, event.user_id, event.group_id)
-                sender.msg = (packet, query_params["q"], additional_msg)
-                await sender.send()
+                packer = ImagePacker(selected_img) # type: ignore
+            packet = packer.get_packet()
+            
+            await _send_single_image(
+                bot=bot,
+                event=event,
+                packet=packet,
+                tags=query_params["q"],
+                additional_msg=additional_msg,
+                file_type=file_type
+            )
                 
         elif mode == 'img2img':
             query_params = {
@@ -80,14 +135,21 @@ async def handle_search(
             }
             searcher = Img2ImgSearcher(query_params)
             selected_img_list = await searcher.select_img_list()
-            packer = ImageListPacker(selected_img_list)
-            packet = packer.get_packet()
-            sender = MultiSegmentSender(bot, event.user_id, event.group_id)
-            sender.add_messages(packet, query_params['distance'])
-            await sender.send()
+            packer = ImageListPacker(selected_img_list) # type: ignore
+            packet_list = packer.get_packet()
+            
+            await _send_image_list(
+                bot=bot,
+                event=event,
+                packet_list=packet_list,
+                distance=query_params['distance']
+            )
 
     except NoImagesFoundError as e:
         logger.error(f"无图片: {str(e)}")
+        await cmd.finish( str(e) )
+    except ImageNumberExceedError as e:
+        logger.warning(f"图片数量超限: {str(e)}")
         await cmd.finish( str(e) )
     except PhilomenaAPIError as e:
         logger.error(f"Philomena API 错误: {str(e)}")

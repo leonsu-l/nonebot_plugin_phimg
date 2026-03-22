@@ -1,0 +1,23 @@
+[project]
+name = "nonebot-plugin-phimg"
+version = "1.0.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "“leonsu-l”", email = "leon_sul@outlook.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "PyJWT>=2.8.0",
+    "aiofiles>=25.1.0",
+    "aiohttp>=3.13.3",
+]
+
+[build-system]
+requires = ["uv_build>=0.10.2,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "nb-cli>=1.7.2",
+]

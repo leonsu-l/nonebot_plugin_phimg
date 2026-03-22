@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 class GroupConfig(BaseModel):
     enabled: bool = True
     onglobal: bool = True
     tags: list[str] = []
 
-class GroupId(BaseModel):
-    __root__: dict[str, GroupConfig] = {}
+class GroupId(RootModel[dict[str, GroupConfig]]):
+    pass
